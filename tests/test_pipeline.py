@@ -1,11 +1,16 @@
 """Offline extraction, flattening and index edge-case checks."""
 import gzip
 import io
+import os
 from pathlib import Path
+import shutil
+import subprocess
 import tarfile
 import tempfile
 import unittest
+from unittest.mock import patch
 
+import arxiv_papers.flatten_tex as flatten_module
 from arxiv_papers.fetch_papers import extract_source
 from arxiv_papers.figindex import build_index as build_figure_index, strip_tex_noise
 from arxiv_papers.flatten_tex import collapse_blank_lines, find_main, flatten, strip_comments
@@ -34,6 +39,7 @@ class PipelineTests(unittest.TestCase):
             (root / "real.tex").write_text(r"\documentclass{article}" + "x" * 100)
             self.assertEqual(find_main(root).name, "real.tex")
 
+    @unittest.skipUnless(shutil.which("perl"), "perl unavailable")
     def test_flatten_multifile(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
@@ -49,6 +55,54 @@ class PipelineTests(unittest.TestCase):
             self.assertIn("raw%keep", text)
             self.assertNotIn(r"\input{sections/body}", text)
             self.assertFalse(check_paper(root, "1706.03762") == [])  # PDF and source intentionally absent
+
+    @unittest.skipUnless(shutil.which("perl"), "perl unavailable")
+    def test_flatten_uses_bundled_script_not_system_latexpand(self):
+        perl = shutil.which("perl")
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            tools = root / "bin"
+            tools.mkdir()
+            (tools / "perl").symlink_to(perl)
+            sentinel = root / "system-latexpand-used"
+            fake = tools / "latexpand"
+            fake.write_text('#!/bin/sh\nprintf used > "' + str(sentinel) + '"\nexit 99\n')
+            fake.chmod(0o755)
+            source = root / "source"
+            source.mkdir()
+            (source / "main.tex").write_text(
+                "\\documentclass{article}\n\\begin{document}\n\\input{body}\n\\end{document}\n")
+            (source / "body.tex").write_text("Bundled expansion " + "words " * 60)
+            output = root / "flat.tex"
+            with patch.dict(os.environ, {"PATH": str(tools)}), patch.object(
+                    flatten_module.subprocess, "run", wraps=subprocess.run) as run:
+                flatten(source, "1706.03762", "1706.03762v1", output)
+            self.assertFalse(sentinel.exists(), "system latexpand must never run")
+            self.assertIn("Bundled expansion", output.read_text())
+            self.assertNotIn(r"\input{body}", output.read_text())
+            vendor = Path(flatten_module.__file__).with_name("_vendor") / "latexpand"
+            run.assert_called_once()
+            self.assertEqual(run.call_args.args[0],
+                             [str(tools / "perl"), str(vendor), "--keep-comments", "main.tex"])
+
+    def test_flatten_missing_perl_is_explicit_error(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "main.tex").write_text(r"\documentclass{article}" + "words " * 60)
+            tools = root / "bin"
+            tools.mkdir()
+            sentinel = root / "system-latexpand-used"
+            fake = tools / "latexpand"
+            fake.write_text('#!/bin/sh\nprintf used > "' + str(sentinel) + '"\nexit 99\n')
+            fake.chmod(0o755)
+            output = root / "flat.tex"
+            with patch.dict(os.environ, {"PATH": str(tools)}), patch.object(
+                    flatten_module.subprocess, "run") as run:
+                with self.assertRaisesRegex(RuntimeError, "(?i)perl"):
+                    flatten(root, "1706.03762", "1706.03762v1", output)
+            run.assert_not_called()
+            self.assertFalse(sentinel.exists())
+            self.assertFalse(output.exists())
 
     def test_unsafe_tar(self):
         for name in ("../outside.tex", "/tmp/outside.tex", "./safe/../../outside.tex"):

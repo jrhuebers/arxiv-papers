@@ -17,3 +17,6 @@ arxiv-papers = "arxiv_papers.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+arxiv_papers = ["_vendor/latexpand", "_vendor/LICENCE", "_vendor/README.md"]

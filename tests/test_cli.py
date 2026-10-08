@@ -64,17 +64,25 @@ class CLITests(unittest.TestCase):
         self.assertFalse(self.root.exists())
 
     def test_tag_or_and_case_and_accents(self):
-        self.assertEqual(self.ids('CAFE', 'VISION'), ['1706.03762', '2305.17589'])
+        self.assertEqual(self.ids('--tag', 'CAFE', '--tag', 'VISION'), ['1706.03762', '2305.17589'])
         self.assertEqual(self.ids('--tag', 'cafe', '--tag', 'ViSiOn', '--match', 'all'), ['1706.03762'])
-        self.assertEqual(self.ids('absent'), [])
-        self.assertEqual(self.ids('cafe', 'absent', '--match', 'all'), [])
+        self.assertEqual(self.ids('--tag', 'absent'), [])
+        self.assertEqual(self.ids('--tag', 'cafe', '--tag', 'absent', '--match', 'all'), [])
+
+    def test_list_rejects_positional_arguments(self):
+        for arguments in [('vision',), ('cafe', 'vision'), ('--tag', 'vision', 'cafe')]:
+            with self.subTest(arguments=arguments):
+                out, err = io.StringIO(), io.StringIO()
+                with redirect_stdout(out), redirect_stderr(err), self.assertRaises(SystemExit) as raised:
+                    cli.main(['--library', str(self.root), 'list', *arguments])
+                self.assertEqual(raised.exception.code, 2)
+                self.assertIn('unrecognized arguments', err.getvalue())
+                self.assertEqual(out.getvalue(), '')
 
     def test_untagged_and_conflicting_filters(self):
         self.assertEqual(self.ids('--untagged'), ['2401.00001'])
-        for arguments in [('vision',), ('--tag', 'vision')]:
-            with self.subTest(arguments=arguments):
-                data, _ = self.invoke('list', '--untagged', *arguments, expected=1)
-                self.assertIn('cannot be combined', data['error'])
+        data, _ = self.invoke('list', '--untagged', '--tag', 'vision', expected=1)
+        self.assertIn('cannot be combined', data['error'])
 
     def test_title_words_not_substrings_and_order_independent(self):
         self.assertEqual(self.ids('--title', 'NETWORKS cafe'), ['1706.03762'])

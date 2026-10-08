@@ -26,7 +26,6 @@ def parser():
     sub = root.add_subparsers(dest='command', required=True)
     listing = sub.add_parser('list', help='list papers with optional filters')
     common(listing)
-    listing.add_argument('tags', nargs='*', help='tag filters (OR by default)')
     listing.add_argument('--tag', action='append', default=[])
     listing.add_argument('--match', choices=['any', 'all'], default='any', help='combine tag filters')
     listing.add_argument('--untagged', action='store_true')
@@ -87,7 +86,6 @@ def run(args):
     library = Library(args.library)
     with locked_library(args.library, create=args.command == 'add'):
         if args.command == 'list':
-            args.tag.extend(args.tags)
             if args.untagged and args.tag:
                 raise ValueError('--untagged cannot be combined with tag filters')
             return [m for _, m in library.select(args)], 0

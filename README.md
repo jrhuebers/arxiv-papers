@@ -4,7 +4,7 @@ A single CLI for a filesystem-backed arXiv paper library, for humans and agents.
 
 ## Install
 
-Python 3.10+ on Linux/macOS is required. Install [`latexpand`](https://ctan.org/pkg/latexpand) (usually through TeX Live) and ensure it is on `PATH`; it is used to flatten author LaTeX sources. The Python package has no third-party runtime dependencies.
+Python 3.10+ on Linux/macOS and Perl on `PATH` are required. A pinned copy of [`latexpand`](https://ctan.org/pkg/latexpand) v1.7.2 is bundled in the Python package and always used to flatten author LaTeX sources; no system latexpand or TeX Live installation is needed. There are no third-party Python runtime dependencies. If Perl is missing, install it through your OS package manager (for example, `sudo apt install perl` on Debian/Ubuntu).
 
 ```bash
 pip install git+https://github.com/jrhuebers/arxiv-papers.git
@@ -103,6 +103,6 @@ pip install -e .
 python3 -m unittest discover -s tests -v
 ```
 
-Tests run offline. Optional corpus regression tests can use `PAPER_FETCHING_TEST_CORPUS=/path/to/papers`; regenerated files are written only to temporary directories. CI installs `latexpand` for flattening tests.
+Tests run offline. Optional corpus regression tests can use `PAPER_FETCHING_TEST_CORPUS=/path/to/papers`; regenerated files are written only to temporary directories. CI exercises the bundled latexpand with Perl, without installing TeX Live. Optional PDF rendering tests require additional TeX/PDF tools and otherwise skip.
 
-The public entry point is `arxiv-papers`; processing modules are internal implementation details adapted from the author's paper-fetching skill. There is no Redis dependency and no separate public script workflow.
+The public entry point is `arxiv-papers`; processing modules are internal implementation details adapted from the author's paper-fetching skill. There is no Redis dependency and no separate public script workflow. The project is MIT-licensed; bundled latexpand is BSD-3-Clause-licensed, with its license and pinned release provenance under `src/arxiv_papers/_vendor/`.

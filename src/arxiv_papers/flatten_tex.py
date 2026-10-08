@@ -76,9 +76,12 @@ def find_main(root: Path) -> Path:
 
 def flatten(root: Path, aid: str, version: str, output: Path, *, prune_macros: str = "safe",
             asset_map: dict[str, str] | None = None) -> Path:
-    tool = shutil.which("latexpand")
+    tool = shutil.which("perl")
     if not tool:
-        raise RuntimeError("latexpand is required (install via TeX Live or CTAN)")
+        raise RuntimeError("Perl is required to run bundled latexpand; install perl with your OS package manager")
+    vendor = Path(__file__).with_name("_vendor") / "latexpand"
+    if not vendor.is_file():
+        raise RuntimeError("bundled latexpand is missing; reinstall arxiv-papers")
     main = find_main(root)
     # --empty-comments destroys literal % inside verbatim; keep comments until our verbatim-aware pass.
     # Most archives keep the main file beside its inputs. Some (e.g. ECHO) place
@@ -89,7 +92,7 @@ def flatten(root: Path, aid: str, version: str, output: Path, *, prune_macros: s
     errors = []
     clean = ""
     for cwd, tex_path in attempts:
-        run = subprocess.run([tool, "--keep-comments", tex_path], cwd=cwd, capture_output=True, timeout=120, check=False)
+        run = subprocess.run([tool, str(vendor), "--keep-comments", tex_path], cwd=cwd, capture_output=True, timeout=120, check=False)
         warnings = run.stderr.decode(errors="replace")
         if run.returncode or not run.stdout:
             errors.append(warnings[:1000] or f"latexpand exited {run.returncode} with empty output")

@@ -19,7 +19,7 @@ class LegacyTeXTests(unittest.TestCase):
                 self.assertEqual(extract_source(data, root), kind)
                 self.assertEqual(find_main(root), root / 'main.tex')
 
-    @unittest.skipUnless(shutil.which('latexpand'), 'latexpand required')
+    @unittest.skipUnless(shutil.which('perl'), 'perl required')
     def test_flatten_and_validate_legacy_paper(self):
         text = (r'\documentstyle[12pt]{article}' + '\n' +
                 r'\begin{document}' + '\n' + 'Legacy text. ' * 40 + '\n' + r'\end{document}')

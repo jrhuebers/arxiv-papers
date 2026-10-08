@@ -144,7 +144,7 @@ class PruneMacroTests(unittest.TestCase):
                              "\\begin" + whitespace + "{" + environment + "}\\keep\\end{" + environment + "}")
                 self.assertIn(r"\newcommand\keep{Text}", prune_unused_macros(text))
 
-    @unittest.skipUnless(shutil.which("latexpand"), "latexpand not installed")
+    @unittest.skipUnless(shutil.which("perl"), "perl not installed")
     def test_unsupported_inline_code_survives_full_cleanup(self):
         for code in (r"\lstinline|100% literal| tail", r"\mintinline{tex}{100% literal} tail"):
             self.assertEqual(strip_comments(code), code)
@@ -195,7 +195,7 @@ class PruneMacroTests(unittest.TestCase):
             style.write_text(r"\csname\computed\endcsname")
             self.assertEqual(prune_unused_macros(text, protected_names=external_macro_names(root)), text)
 
-    @unittest.skipUnless(shutil.which("latexpand"), "latexpand not installed")
+    @unittest.skipUnless(shutil.which("perl"), "perl not installed")
     def test_final_pass_sees_uses_across_inputs_and_keeps_originals(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "source"

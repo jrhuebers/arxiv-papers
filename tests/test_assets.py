@@ -146,7 +146,7 @@ class AssetTests(unittest.TestCase):
             self.assertIn("- image: figures/b/pic.png", (root / "FIGURES.md").read_text())
 
 
-    @unittest.skipUnless(shutil.which("pdflatex") and shutil.which("latexpand") and importlib.util.find_spec("pymupdf"), "rendering tools unavailable")
+    @unittest.skipUnless(shutil.which("pdflatex") and shutil.which("perl") and importlib.util.find_spec("pymupdf"), "rendering tools unavailable")
     def test_relocated_graphics_and_wrapper_render_identically(self):
         import pymupdf
         with tempfile.TemporaryDirectory() as tmp:
@@ -170,7 +170,7 @@ class AssetTests(unittest.TestCase):
                 self.assertEqual([p.get_text() for p in before], [p.get_text() for p in after])
                 self.assertEqual([p.get_pixmap().samples for p in before], [p.get_pixmap().samples for p in after])
 
-    @unittest.skipUnless(shutil.which("latexpand"), "latexpand unavailable")
+    @unittest.skipUnless(shutil.which("perl"), "perl unavailable")
     def test_subimport_repair_end_to_end(self):
         with tempfile.TemporaryDirectory() as tmp:
             root, out = Path(tmp) / "src", Path(tmp) / "out"
