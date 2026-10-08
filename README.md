@@ -21,7 +21,7 @@ The library defaults to `./arxiv-papers/`, relative to your current working dire
 arxiv-papers add 2509.21097 1706.03762 --tag reading
 arxiv-papers add hep-th/9901001v3
 arxiv-papers list
-arxiv-papers list GNNs datasets                  # either tag
+arxiv-papers list --tag GNNs --tag datasets      # either tag
 arxiv-papers list --tag GNNs --tag datasets --match all
 arxiv-papers list --untagged
 arxiv-papers list --author Miolane --title "synthetic graph"
