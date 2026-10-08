@@ -103,7 +103,7 @@ def parser():
         formatter_class=argparse.RawDescriptionHelpFormatter, epilog=OVERVIEW)
     common(root, top=True)
     root.add_argument('--version', action='version', version=__version__, help='show installed package version and exit')
-    sub = root.add_subparsers(dest='command', required=True, title='commands')
+    sub = root.add_subparsers(dest='command', required=True, title='commands', metavar='COMMAND')
     def command(name, summary, description, examples):
         p = sub.add_parser(name, help=summary, description=description,
                            formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -160,7 +160,7 @@ def parser():
         'Manage tags without moving papers. Tags match case/accent-insensitively and retain display spelling.\nBare IDs select installed revisions; explicit versions must match. All IDs are validated before changes.',
         '  arxiv-papers tag add 2509.21097 1706.03762 --tag GNNs --tag reading\n'
         '  arxiv-papers tag remove 2509.21097 --tag reading')
-    tag_sub = tag.add_subparsers(dest='operation', required=True, title='tag operations')
+    tag_sub = tag.add_subparsers(dest='operation', required=True, title='tag operations', metavar='OPERATION')
     for operation in ['add', 'remove']:
         p = tag_sub.add_parser(operation, help=operation + ' selected tags on installed papers',
             description=('Add tags without duplicates, preserving existing tags and their spelling.' if operation == 'add'
