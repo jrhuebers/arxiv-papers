@@ -12,7 +12,7 @@ from .prune_macros import external_macro_names, prune_unused_macros, tokenize
 
 VERBATIM = {"verbatim", "verbatim*", "Verbatim", "lstlisting", "minted", "alltt"}
 TOKEN = re.compile(r"\\(?:begin|end)\{([A-Za-z*]+)\}|%")
-DOC = re.compile(r"^[^%\n]*\\documentclass(?:\[[^]]*\])?\s*\{", re.M)
+DOC = re.compile(r"^[^%\n]*\\document(?:class|style)(?:\[[^]]*\])?\s*\{", re.M)
 
 
 def strip_comments(text: str) -> str:
@@ -70,7 +70,7 @@ def find_main(root: Path) -> Path:
         if DOC.search(text):
             candidates.append((path.stat().st_size, path))
     if not candidates:
-        raise ValueError("no LaTeX main file containing \\documentclass")
+        raise ValueError("no LaTeX main file containing \\documentclass or \\documentstyle")
     return max(candidates)[1]
 
 

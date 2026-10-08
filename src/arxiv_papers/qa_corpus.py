@@ -38,8 +38,8 @@ def check_paper(directory: Path, aid: str | None = None, version: str | None = N
         errors.append("missing/tiny flattened TeX")
     else:
         text = tex.read_text(encoding="utf-8", errors="replace")
-        if not re.search(r"\\documentclass(?:\[[^]]*\])?\s*\{", text):
-            errors.append("missing documentclass")
+        if not re.search(r"\\document(?:class|style)(?:\[[^]]*\])?\s*\{", text):
+            errors.append("missing documentclass/documentstyle")
         expected = re.escape(version) if version else re.escape(aid) + r"v[0-9]+"
         if not re.search(rf"^% arXiv {re.escape(canonical_id)} \(latest: {expected}\)", text):
             errors.append("missing/mismatched version header")

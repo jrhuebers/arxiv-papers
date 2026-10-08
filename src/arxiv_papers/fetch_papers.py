@@ -175,7 +175,7 @@ def extract_source(data: bytes, root: Path) -> str:
         try:
             archive = tarfile.open(fileobj=io.BytesIO(text), mode="r|")
         except tarfile.ReadError:
-            if b"\\documentclass" not in text:
+            if not re.search(rb"\\document(?:class|style)\b", text):
                 raise ValueError("gzip source is not LaTeX")
             (root / "main.tex").write_bytes(text)
             return "tex.gz"
@@ -197,7 +197,7 @@ def extract_source(data: bytes, root: Path) -> str:
                     with tf.extractfile(member) as source, destination.open("wb") as output:
                         shutil.copyfileobj(source, output, length=64 * 1024)
             return "tar.gz"
-    if b"\\documentclass" in data[:200_000]:
+    if re.search(rb"\\document(?:class|style)\b", data[:200_000]):
         (root / "main.tex").write_bytes(data)
         return "tex"
     raise ValueError("arXiv source is neither tar.gz nor LaTeX (PDF/PS or error page?)")
