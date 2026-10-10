@@ -333,7 +333,15 @@ class CLITests(unittest.TestCase):
             result, _ = self.invoke('check', expected=1)
         self.assertEqual(result[0]['errors'], ['missing PDF'])
         self.invoke('rebuild-indexes')
-        self.assertIn('Café neural attention networks', (self.root / 'INDEX.md').read_text())
+        self.assertEqual(
+            (self.root / 'INDEX.md').read_text(encoding='utf-8'),
+            '# arXiv paper library\n\n'
+            '- Café neural attention networks -- 1706.03762v1 -- '
+            'José García; Ada Lovelace\n'
+            '- Attention for neural systems -- 2305.17589v1 -- '
+            'Grace Hopper\n'
+            '- Unrelated topic -- 2401.00001v1 -- A Author\n',
+        )
         self.assertTrue((self.first / 'abstract.md').is_file())
 
 

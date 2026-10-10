@@ -186,9 +186,9 @@ class Library:
         papers = self.papers()
         lines = ['# arXiv paper library', '']
         for directory, metadata in papers:
-            title = metadata['title'].replace('\n', ' ').replace('[', r'\[').replace(']', r'\]')
+            title = metadata['title'].replace('\n', ' ')
             authors = '; '.join(metadata['authors']).replace('\n', ' ')
-            lines.append(f"- [{title}]({directory.name}/) — {metadata['arxiv_id']}{metadata['version']} — {authors}")
+            lines.append(f"- {title} -- {metadata['arxiv_id']}{metadata['version']} -- {authors}")
             atomic_write(directory / 'abstract.md', '# ' + metadata['title'].replace('\n', ' ') + '\n\n' + metadata['abstract'] + '\n')
             if detailed:
                 with redirect_stdout(io.StringIO()):

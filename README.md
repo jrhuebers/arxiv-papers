@@ -77,7 +77,7 @@ arxiv-papers/
 
 Original sources may instead be `.source.tex` or `.tex.gz`. If LaTeX source is unavailable, `source-unavailable.txt` explains the PDF-only paper. Image and bibliography paths retain their original source-relative structure. Macro pruning is conservative and enabled by default; pass `--prune-macros off` to add/update to disable it. Original sources are preserved regardless.
 
-`INDEX.md` lists titles, versioned IDs, and author lists, with directory links. Abstracts are in individual `abstract.md` files instead.
+`INDEX.md` lists each paper as `- title -- arxiv_id+version -- author; author`. Abstracts are in individual `abstract.md` files instead.
 
 Example `metadata.json` (the source of truth):
 
