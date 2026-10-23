@@ -77,6 +77,8 @@ arxiv-papers/
 
 Original sources may instead be `.source.tex` or `.tex.gz`. If LaTeX source is unavailable, `source-unavailable.txt` explains the PDF-only paper. Image and bibliography paths retain their original source-relative structure. Macro pruning is conservative and enabled by default; pass `--prune-macros off` to add/update to disable it. Original sources are preserved regardless.
 
+Literal `\\subfile{...}` and `\\subfileinclude{...}` calls are expanded as well as ordinary inputs/includes. Standalone `subfiles`-class child documents contribute their document bodies, not their separate preambles. Normalization uses a temporary source copy and leaves both the original archive and bundled latexpand unchanged. This remains best-effort source flattening, not a TeX interpreter; missing, dynamic, or unresolved subfile calls fail rather than silently producing front matter without chapters. `check` also flags unresolved subfile/import calls in existing library entries; use `update IDvN` to regenerate an affected revision.
+
 `INDEX.md` lists each paper as `- title -- arxiv_id+version -- author; author`. Abstracts are in individual `abstract.md` files instead.
 
 Example `metadata.json` (the source of truth):

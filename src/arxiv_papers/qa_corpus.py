@@ -5,6 +5,8 @@ from pathlib import Path
 import re
 import tarfile
 
+from .subfiles import has_unexpanded_inclusions
+
 
 def source_files(directory: Path, aid: str) -> list[Path]:
     excluded = {f"{aid}.pdf", f"{aid}.tex"}
@@ -43,8 +45,8 @@ def check_paper(directory: Path, aid: str | None = None, version: str | None = N
         expected = re.escape(version) if version else re.escape(aid) + r"v[0-9]+"
         if not re.search(rf"^% arXiv {re.escape(canonical_id)} \(latest: {expected}\)", text):
             errors.append("missing/mismatched version header")
-        if re.search(r"\\(?:input|include)\s*\{[^}]+\}", text):
-            errors.append("unexpanded TeX input/include")
+        if has_unexpanded_inclusions(text):
+            errors.append("unexpanded TeX source inclusion (input/include/subfile/import)")
     originals = source_files(directory, aid)
     if len(originals) != 1 or originals[0].stat().st_size == 0:
         errors.append("missing or ambiguous original source")

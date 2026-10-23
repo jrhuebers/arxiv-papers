@@ -9,6 +9,7 @@ import subprocess
 
 from .assets import rewrite_asset_paths
 from .prune_macros import external_macro_names, prune_unused_macros, tokenize
+from .subfiles import document_class, has_unexpanded_inclusions, normalized_source_tree
 
 VERBATIM = {"verbatim", "verbatim*", "Verbatim", "lstlisting", "minted", "alltt"}
 TOKEN = re.compile(r"\\(?:begin|end)\{([A-Za-z*]+)\}|%")
@@ -68,7 +69,12 @@ def find_main(root: Path) -> Path:
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
         if DOC.search(text):
-            candidates.append((path.stat().st_size, path))
+            try:
+                is_subfile = document_class(text) == "subfiles"
+            except ValueError:
+                is_subfile = False  # Preserve the existing fallback for unusual TeX syntax.
+            if not is_subfile:
+                candidates.append((path.stat().st_size, path))
     if not candidates:
         raise ValueError("no LaTeX main file containing \\documentclass or \\documentstyle")
     return max(candidates)[1]
@@ -86,35 +92,38 @@ def flatten(root: Path, aid: str, version: str, output: Path, *, prune_macros: s
     # --empty-comments destroys literal % inside verbatim; keep comments until our verbatim-aware pass.
     # Most archives keep the main file beside its inputs. Some (e.g. ECHO) place
     # the main .tex one directory below the source root while inputs remain root-relative.
-    attempts = [(main.parent, main.name)]
-    if main.parent != root:
-        attempts.append((root, main.relative_to(root).as_posix()))
-    errors = []
-    clean = ""
-    for cwd, tex_path in attempts:
-        run = subprocess.run([tool, str(vendor), "--keep-comments", tex_path], cwd=cwd, capture_output=True, timeout=120, check=False)
-        warnings = run.stderr.decode(errors="replace")
-        if run.returncode or not run.stdout:
-            errors.append(warnings[:1000] or f"latexpand exited {run.returncode} with empty output")
-            continue
-        candidate = collapse_blank_lines(strip_comments(run.stdout.decode("utf-8", errors="replace")))
-        # Some latexpand versions warn and exit successfully while leaving unresolved inputs.
-        if re.search(r"\\(?:input|include)\s*\{[^}]+\}", candidate):
-            errors.append(warnings[:1000] or f"unexpanded input/include when running from {cwd}")
-            continue
-        if re.search(r"(?:not found|cannot open|no such file|can't open|could not find file)", warnings, re.I):
-            errors.append(warnings[:1000])
-            continue
-        clean = candidate
-        break
-    else:
-        raise RuntimeError("latexpand failed to flatten source: " + "; ".join(errors))
+    with normalized_source_tree(root) as source:
+        prepared_main = source / main.relative_to(root)
+        attempts = [(prepared_main.parent, prepared_main.name)]
+        if prepared_main.parent != source:
+            attempts.append((source, main.relative_to(root).as_posix()))
+        errors = []
+        clean = ""
+        for cwd, tex_path in attempts:
+            run = subprocess.run([tool, str(vendor), "--keep-comments", tex_path], cwd=cwd, capture_output=True, timeout=120, check=False)
+            warnings = run.stderr.decode(errors="replace")
+            if run.returncode or not run.stdout:
+                errors.append(warnings[:1000] or f"latexpand exited {run.returncode} with empty output")
+                continue
+            candidate = collapse_blank_lines(strip_comments(run.stdout.decode("utf-8", errors="replace")))
+            # latexpand can exit successfully while leaving unsupported directives.
+            if has_unexpanded_inclusions(candidate):
+                errors.append(warnings[:1000] or f"unexpanded source inclusion when running from {cwd}")
+                continue
+            if re.search(r"(?:not found|cannot open|no such file|can't open|could not find file)", warnings, re.I):
+                errors.append(warnings[:1000])
+                continue
+            clean = candidate
+            source_cwd = cwd.relative_to(source).as_posix()
+            break
+        else:
+            raise RuntimeError("latexpand failed to flatten source: " + "; ".join(errors))
     if not DOC.search(clean) or len(clean) < 200:
         raise ValueError("flattened LaTeX is empty or missing documentclass")
     # Source-relative assets were materialized before flattening. Repair import
     # prefixes and map literal references before the final dead-macro pass.
     if asset_map is not None:
-        clean = rewrite_asset_paths(clean, asset_map, cwd=cwd.relative_to(root).as_posix())
+        clean = rewrite_asset_paths(clean, asset_map, cwd=source_cwd)
     # Final cleanup: search the complete single-file source, never individual inputs.
     clean = prune_unused_macros(clean, prune_macros, external_macro_names(root))
     clean = collapse_blank_lines(clean)
